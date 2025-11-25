@@ -9,5 +9,6 @@ export const ENV = {
     PORT: process.env.PORT || 5000,
     CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
     NODE_ENV: process.env.NODE_ENV || 'development',
-    BREVO_API_KEY: process.env.BREVO_API_KEY
+    BREVO_API_KEY: process.env.BREVO_API_KEY,
+    REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379'
 }

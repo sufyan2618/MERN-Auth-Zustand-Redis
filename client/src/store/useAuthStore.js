@@ -17,6 +17,7 @@ const useAuthStore = create(
     Register: async (userData) => {
             set({ isSigningup: true });
         try {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay for better UX
             const response = await axiosInstance.post('/auth/register', userData);
             return response.data;
         } catch (error) {
@@ -47,6 +48,7 @@ const useAuthStore = create(
     VerifyOTP: async (otpData) => {
         set({ isVerifyingOTP: true });
         try {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay for better UX
             const response = await axiosInstance.post('/auth/verify-otp', otpData);
             return response.data;
         } catch (error) {

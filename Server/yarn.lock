@@ -2188,6 +2188,7 @@ __metadata:
     cors: "npm:^2.8.5"
     dotenv: "npm:^17.2.3"
     express: "npm:^5.1.0"
+    ioredis: "npm:^5.8.2"
     joi: "npm:^18.0.1"
     jsonwebtoken: "npm:^9.0.2"
     mongoose: "npm:^8.19.4"

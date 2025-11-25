@@ -69,6 +69,7 @@ export const register = async (req, res) => {
         const emailTemplate = otpVerificationTemplate(firstName, otp);
         
         try {
+            console.log("sending email")
             await emailQueue.add("sendEmail", {
                 to: email,
                 subject: "OTP Verification",
@@ -235,6 +236,8 @@ export const login = async (req, res) => {
     }
 };
 
+
+
 export const logout = (req, res) => {
     res.clearCookie("token", {
         httpOnly: true,
@@ -246,6 +249,8 @@ export const logout = (req, res) => {
         message: "Logout successful" 
     });
 };
+
+
 
 export const getProfile = async (req, res) => {
     try {
@@ -271,6 +276,8 @@ export const getProfile = async (req, res) => {
         });
     }
 };
+
+
 
 export const resendOTP = async (req, res) => {
     try {
@@ -341,6 +348,8 @@ export const resendOTP = async (req, res) => {
     }
 };
 
+
+
 export const resetPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -404,9 +413,11 @@ export const resetPassword = async (req, res) => {
 };
 
 
+
+
 export const updatePassword = async (req, res) => {
     try {
-        const { email, otp, newPassword, confirmNewPassword } = req.body;
+        const { email, newPassword, confirmNewPassword } = req.body;
         
         if (newPassword !== confirmNewPassword) {
             return res.status(400).json({ 
@@ -431,13 +442,6 @@ export const updatePassword = async (req, res) => {
             });
         }
         
-        // Verify OTP
-        if (!user.verifyOTP(otp)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Invalid or expired OTP" 
-            });
-        }
         
         // Update password
         user.password = newPassword;

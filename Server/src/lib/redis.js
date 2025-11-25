@@ -1,11 +1,10 @@
-import { createClient } from 'redis';
+import Redis from 'ioredis';
+import { ENV } from '../util/dotenv.js';
 
-const redisConnection = createClient({
-  url: process.env.REDIS_URL,
+const redisConnection = new Redis(ENV.REDIS_URL, {
+    maxRetriesPerRequest: null
 });
 
 redisConnection.on('error', (err) => console.log('Redis Client Error', err));
-
-await redisConnection.connect();
 
 export { redisConnection };
