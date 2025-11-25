@@ -5,6 +5,7 @@ import { ENV } from './src/util/dotenv.js';
 import { connectDB } from './src/lib/db.js';
 import authRoutes from './src/routers/authRouter.js';
 import { logger, morganMiddleware } from './src/config/logger.js';
+import { globalRateLimiter, authRateLimiter } from './src/config/rateLimiting.js';
 
 const app = express();
 const PORT = ENV.PORT || 5000;
@@ -23,8 +24,10 @@ app.use(cors(
     }
 ));
 
+// Apply global rate limiter to all routes
+app.use(globalRateLimiter);
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRateLimiter, authRoutes);
 
 
 // Health Check Endpoint
