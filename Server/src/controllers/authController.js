@@ -1,12 +1,13 @@
 import User from "../models/user.model.js";
 import { ENV } from "../util/dotenv.js";
-import { sendEmail } from "../services/emailService.js";
 import { otpVerificationTemplate } from "../util/templates/otp-verification.js";
 import { passwordChangedTemplate } from "../util/templates/password-changed.js";
 import { generateToken } from "../util/generateToken.js";
 import { emailQueue } from "../queues/index.js";
+import { logger } from "../config/logger.js";
 
 export const register = async (req, res) => {
+    logger.info(`Registration attempt: ${req.body.email}`);
     try {
         const { firstName, lastName, email, password } = req.body;
         
@@ -26,7 +27,7 @@ export const register = async (req, res) => {
                 
                 // Resend OTP
                 const otp = existingUser.generateOTP();
-                console.log(`Resent OTP for ${email}: ${otp}`);
+                logger.info(`Resent OTP for ${email}: ${otp}`);
                 
                 const emailTemplate = otpVerificationTemplate(existingUser.firstName, otp);
                 
@@ -45,7 +46,7 @@ export const register = async (req, res) => {
                         remainingAttempts: existingUser.getRemainingEmailAttempts()
                     });
                 } catch (error) {
-                    console.error("Error sending OTP email:", error);
+                    logger.error(`Error sending OTP email: ${error.message}`);
                     return res.status(500).json({ 
                         success: false, 
                         message: "Failed to send OTP email" 
@@ -64,12 +65,12 @@ export const register = async (req, res) => {
         
         // Generate and send OTP
         const otp = user.generateOTP();
-        console.log(`OTP for ${email}: ${otp}`);
-        
+        logger.info(`OTP for ${email}: ${otp}`);
+
         const emailTemplate = otpVerificationTemplate(firstName, otp);
         
         try {
-            console.log("sending email")
+            logger.info(`Sending verification email to ${email}`)
             await emailQueue.add("sendEmail", {
                 to: email,
                 subject: "OTP Verification",
@@ -93,7 +94,7 @@ export const register = async (req, res) => {
                 remainingAttempts: user.getRemainingEmailAttempts()
             });
         } catch (error) {
-            console.error("Error sending OTP email:", error);
+            logger.error(`Error sending OTP email: ${error.message}`);
             // Delete user if email fails
             await User.deleteOne({ _id: user._id });
             return res.status(500).json({ 
@@ -102,7 +103,7 @@ export const register = async (req, res) => {
             });
         }
     } catch (error) {
-        console.error("Registration error:", error);
+        logger.error(`Registration error: ${error.message}`);
         res.status(500).json({ 
             success: false, 
             message: "Server error", 
@@ -140,7 +141,7 @@ export const verifyOTP = async (req, res) => {
             message: "User verified successfully" 
         });
     } catch (error) {
-        console.error("Verify OTP error:", error);
+        logger.error(`Verify OTP error: ${error.message}`);
         res.status(500).json({ 
             success: false, 
             message: "Server error" 
@@ -151,7 +152,7 @@ export const verifyOTP = async (req, res) => {
 
 
 export const login = async (req, res) => {
-    console.log("Login attempt:", req.body.email);
+    logger.info(`Login attempt: ${req.body.email}`);
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email: email.toLowerCase() });
@@ -227,7 +228,7 @@ export const login = async (req, res) => {
             message: "Login successful"
         });
     } catch (error) {
-        console.error("Login error:", error);
+        logger.error(`Login error: ${error.message}`);
         res.status(500).json({ 
             success: false, 
             message: "Server error", 
@@ -269,7 +270,7 @@ export const getProfile = async (req, res) => {
             data: user 
         });
     } catch (error) {
-        console.error("Get profile error:", error);
+        logger.error(`Get profile error: ${error.message}`);
         res.status(500).json({ 
             success: false, 
             message: "Server error" 
@@ -310,7 +311,7 @@ export const resendOTP = async (req, res) => {
         
         // Generate and send OTP
         const otp = user.generateOTP();
-        console.log(`Resent OTP for ${email}: ${otp}`);
+        logger.info(`Resent OTP for ${email}: ${otp}`);
         
         const emailTemplate = otpVerificationTemplate(user.firstName, otp);
         
@@ -333,14 +334,14 @@ export const resendOTP = async (req, res) => {
                 remainingAttempts: remaining
             });
         } catch (error) {
-            console.error("Error sending OTP email:", error);
+            logger.error(`Error sending OTP email: ${error.message}`);
             return res.status(500).json({ 
                 success: false, 
                 message: "Failed to send OTP email" 
             });
         }
     } catch (error) {
-        console.error("Resend OTP error:", error);
+        logger.error(`Resend OTP error: ${error.message}`);
         res.status(500).json({ 
             success: false, 
             message: "Server error" 
@@ -374,7 +375,7 @@ export const resetPassword = async (req, res) => {
         
         // Generate and send OTP
         const otp = user.generateOTP();
-        console.log(`OTP for password reset ${email}: ${otp}`);
+        logger.info(`OTP for password reset ${email}: ${otp}`);
         
         const emailTemplate = otpVerificationTemplate(user.firstName, otp);
         
@@ -397,14 +398,14 @@ export const resetPassword = async (req, res) => {
                 remainingAttempts: remaining
             });
         } catch (error) {
-            console.error("Error sending OTP email:", error);
+            logger.error(`Error sending OTP email: ${error.message}`);
             return res.status(500).json({ 
                 success: false, 
                 message: "Failed to send OTP email" 
             });
         }
     } catch (error) {
-        console.error("Reset password error:", error);
+        logger.error(`Reset password error: ${error.message}`);
         res.status(500).json({ 
             success: false, 
             message: "Server error" 
@@ -458,7 +459,7 @@ export const updatePassword = async (req, res) => {
                 html: emailTemplate
             });
         } catch (error) {
-            console.error("Error sending password changed email:", error);
+            logger.error(`Error sending password changed email: ${error.message}`);
         }
         
         res.status(200).json({ 
@@ -466,7 +467,7 @@ export const updatePassword = async (req, res) => {
             message: "Password updated successfully" 
         });
     } catch (error) {
-        console.error("Update password error:", error);
+        logger.error(`Update password error: ${error.message}`);
         res.status(500).json({ 
             success: false, 
             message: "Server error" 

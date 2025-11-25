@@ -4,11 +4,13 @@ import cors from 'cors';
 import { ENV } from './src/util/dotenv.js';
 import { connectDB } from './src/lib/db.js';
 import authRoutes from './src/routers/authRouter.js';
+import { logger, morganMiddleware } from './src/config/logger.js';
 
 const app = express();
 const PORT = ENV.PORT || 5000;
 
 // Middleware
+app.use(morganMiddleware);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors(
@@ -34,6 +36,6 @@ app.get('/api/health', (req, res) => {
 // Start the server
 connectDB().then(() => {
     app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
+        logger.info(`Server is running on http://localhost:${PORT}`);
     });
 });
