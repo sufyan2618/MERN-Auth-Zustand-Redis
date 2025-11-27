@@ -1,11 +1,12 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import { ENV } from './src/util/dotenv.js';
-import { connectDB } from './src/lib/db.js';
-import authRoutes from './src/routers/authRouter.js';
-import { logger, morganMiddleware } from './src/config/logger.js';
-import { globalRateLimiter, authRateLimiter } from './src/config/rateLimiting.js';
+import { ENV } from './util/dotenv.js';
+import authRoutes from './routers/authRouter.js';
+import { morganMiddleware } from './config/logger.js';
+import { globalRateLimiter, authRateLimiter } from './config/rateLimiting.js';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './config/swagger.js';
 
 const app = express();
 const PORT = ENV.PORT || 5000;
@@ -36,9 +37,7 @@ app.get('/api/health', (req, res) => {
 });
 
 
-// Start the server
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        logger.info(`Server is running on http://localhost:${PORT}`);
-    });
-});
+// Swagger API Documentation
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+export default app;
