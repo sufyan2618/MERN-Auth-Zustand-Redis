@@ -2,12 +2,13 @@
   "name": "server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/server.js",
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "worker": "node src/workers/emailWorker.js",
-    "dev:worker": "node --watch src/workers/emailWorker.js"
+    "dev:worker": "node --watch src/workers/emailWorker.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:worker\""
   },
   "type": "module",
   "keywords": [],
