@@ -40,6 +40,5 @@ jspm_packages/
 .pnp.*
 node_modules
 .git
-Dockerfile
 dist
 .env
