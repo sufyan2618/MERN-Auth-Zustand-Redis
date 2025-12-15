@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mern-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - mern-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mern-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mern-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: mern-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mern-auth-redis
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=5000
+      - NODE_ENV=production
+      - CLIENT_URL=http://localhost:3000
+      - BREVO_API_KEY=${BREVO_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_USER=${EMAIL_USER}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - mern-network
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: mern-worker
+    command: node src/workers/emailWorker.js
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mern-auth-redis
+      - REDIS_URL=redis://redis:6379
+      - BREVO_API_KEY=${BREVO_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_USER=${EMAIL_USER}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - mern-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: mern-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - mern-network
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+
+networks:
+  mern-network:
+    driver: bridge

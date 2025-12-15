@@ -449,8 +449,202 @@ yarn build
 yarn preview
 ```
 
-### Docker Deployment
-Both `Server` and `client` directories include Dockerfiles for containerization.
+## 🐳 Docker Deployment
+
+Both `Server` and `client` directories include Dockerfiles for containerized deployment.
+
+### Backend Docker Setup
+
+The backend uses a multi-stage build with Node.js 22 Alpine:
+
+```bash
+cd Server
+
+# Build the Docker image
+docker build -t mern-auth-backend .
+
+# Run the container
+docker run -d \
+  --name mern-backend \
+  -p 5000:5000 \
+  --env-file .env \
+  mern-auth-backend
+```
+
+**Important**: Make sure MongoDB and Redis are accessible from the Docker container. Update `MONGO_URI` and `REDIS_URL` in `.env` accordingly:
+```env
+# Use host.docker.internal on Windows/Mac or container network
+MONGO_URI=mongodb://host.docker.internal:27017/mern-auth-redis
+REDIS_URL=redis://host.docker.internal:6379
+```
+
+### Email Worker Docker
+
+Run the worker in a separate container:
+
+```bash
+cd Server
+
+# Build worker image (same Dockerfile, different command)
+docker build -t mern-auth-worker .
+
+# Run worker container
+docker run -d \
+  --name mern-worker \
+  --env-file .env \
+  mern-auth-worker \
+  node src/workers/emailWorker.js
+```
+
+### Frontend Docker Setup
+
+The frontend uses a multi-stage build with Nginx for production:
+
+```bash
+cd client
+
+# Build the Docker image
+docker build -t mern-auth-frontend .
+
+# Run the container
+docker run -d \
+  --name mern-frontend \
+  -p 3000:80 \
+  mern-auth-frontend
+```
+
+The frontend will be served via Nginx on port 80 (mapped to host port 3000).
+
+### Docker Compose (Recommended)
+
+Create a `docker-compose.yml` at the root to orchestrate all services:
+
+```yaml
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mern-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - mern-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: mern-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mern-network
+
+  backend:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: mern-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mern-auth-redis
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=5000
+      - CLIENT_URL=http://localhost:3000
+      - BREVO_API_KEY=${BREVO_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_USER=${EMAIL_USER}
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - mern-network
+
+  worker:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: mern-worker
+    command: node src/workers/emailWorker.js
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/mern-auth-redis
+      - REDIS_URL=redis://redis:6379
+      - BREVO_API_KEY=${BREVO_API_KEY}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_USER=${EMAIL_USER}
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - mern-network
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: mern-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - mern-network
+
+volumes:
+  mongo-data:
+
+networks:
+  mern-network:
+    driver: bridge
+```
+
+**Run all services with Docker Compose:**
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+```
+
+### Docker Environment Setup
+
+1. Create `.env` file in the root directory:
+```env
+JWT_SECRET=your-jwt-secret
+BREVO_API_KEY=your-brevo-api-key
+EMAIL_FROM=your-email@example.com
+EMAIL_USER=your-brevo-smtp-login
+```
+
+2. Start all services:
+```bash
+docker-compose up -d
+```
+
+3. Access the application:
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
+   - Swagger Docs: http://localhost:5000/api/docs
+
+### Docker Notes
+
+- **Backend**: Exposes port 5000
+- **Frontend**: Served via Nginx on port 80 (mapped to 3000)
+- **MongoDB**: Port 27017
+- **Redis**: Port 6379
+- **Volumes**: MongoDB data persisted in `mongo-data` volume
+- **Network**: All services communicate via `mern-network` bridge
 
 ## 🤝 Contributing
 
